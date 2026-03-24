@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Standup Selector</title>
+    <style>
+        :root {
+            --bg-color: #0b101e; /* Deep space dark */
+            --panel-bg: #162032;
+            --text-main: #e0e6ed;
+            --accent-glow: #1589ee; /* Tech/Salesforce Blue */
+            --success-color: #04844b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .sidebar {
+            width: 300px;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .main-stage {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .tracking-panel {
+            width: 250px;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Typography & Elements */
+        h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(21, 137, 238, 0.3);
+            padding-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            flex-grow: 1;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            resize: none;
+            font-family: monospace;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: var(--accent-glow);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background-color: #0070d2;
+            box-shadow: 0 0 15px rgba(21, 137, 238, 0.6);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Main Stage Elements */
+        .title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+            color: #fff;
+        }
+
+        .winner-display {
+            font-size: 5rem;
+            font-weight: bold;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--accent-glow);
+            text-shadow: 0 0 20px rgba(21, 137, 238, 0.4);
+            transition: all 0.1s;
+        }
+
+        .spin-btn {
+            font-size: 1.5rem;
+            padding: 20px 50px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--accent-glow) 0%, #005fb2 100%);
+        }
+
+        /* Lists */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        li {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .picked-list li {
+            text-decoration: line-through;
+            color: #888;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .remaining-list li {
+            border-left: 3px solid var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Daily Roster</h2>
+        <p style="font-size: 0.8rem; color: #aaa;">Paste team names below (one per line). Update this daily as needed.</p>
+        <textarea id="nameInput">
+Admin Alex
+Developer Dan
+BA Brianna
+CPQ Chris
+Support Sam</textarea>
+        <button onclick="loadRoster()">Initialize Roster</button>
+    </div>
+
+    <div class="main-stage">
+        <div class="title">Galactic Standup Selector</div>
+        <div class="winner-display" id="winnerDisplay">SYSTEM READY</div>
+        <button class="spin-btn" id="spinBtn" onclick="spinWheel()" disabled>Pick Next Team Member</button>
+    </div>
+
+    <div class="tracking-panel">
+        <h2>Remaining (<span id="remCount">0</span>)</h2>
+        <ul id="remainingList" class="remaining-list" style="margin-bottom: 20px;"></ul>
+        
+        <h2>Completed (<span id="compCount">0</span>)</h2>
+        <ul id="pickedList" class="picked-list"></ul>
+    </div>
+
+    <script>
+        /**
+         * Core logic for tracking and randomly selecting team members.
+         */
+        let remainingNames = [];
+        let pickedNames = [];
+        let isSpinning = false;
+
+        // DOM Elements
+        const elNameInput = document.getElementById('nameInput');
+        const elWinnerDisplay = document.getElementById('winnerDisplay');
+        const elSpinBtn = document.getElementById('spinBtn');
+        const elRemainingList = document.getElementById('remainingList');
+        const elPickedList = document.getElementById('pickedList');
+        const elRemCount = document.getElementById('remCount');
+        const elCompCount = document.getElementById('compCount');
+
+        /**
+         * Reads the textarea, clears previous state, and loads the fresh roster.
+         */
+        function loadRoster() {
+            const rawText = elNameInput.value;
+            // Split by line break, trim whitespace, and remove empty lines
+            remainingNames = rawText.split('\n')
+                                    .map(name => name.trim())
+                                    .filter(name => name.length > 0);
+            
+            pickedNames = [];
+            
+            if (remainingNames.length === 0) {
+                alert("Please add at least one name to the roster.");
+                return;
+            }
+
+            elWinnerDisplay.innerText = "ROSTER LOADED";
+            elWinnerDisplay.style.color = "var(--text-main)";
+            elSpinBtn.disabled = false;
+            
+            updateUI();
+        }
+
+        /**
+         * Handles the animation and selection logic.
+         */
+        function spinWheel() {
+            if (isSpinning || remainingNames.length === 0) return;
+            
+            isSpinning = true;
+            elSpinBtn.disabled = true;
+            elWinnerDisplay.style.color = "var(--text-main)";
+
+            let shuffleCount = 0;
+            const maxShuffles = 20; // Number of rapid flashes before stopping
+            const shuffleSpeed = 70; // Milliseconds between flashes
+
+            // Rapid-cycle animation to build suspense
+            const shuffleInterval = setInterval(() => {
+                const randomVisualIndex = Math.floor(Math.random() * remainingNames.length);
+                elWinnerDisplay.innerText = remainingNames[randomVisualIndex];
+                shuffleCount++;
+
+                if (shuffleCount >= maxShuffles) {
+                    clearInterval(shuffleInterval);
+                    finalizePick();
+                }
+            }, shuffleSpeed);
+        }
+
+        /**
+         * Locks in the final choice, moves them between arrays, and updates DOM.
+         */
+        function finalizePick() {
+            // Select the actual winner
+            const winningIndex = Math.floor(Math.random() * remainingNames.length);
+            const winner = remainingNames[winningIndex];
+
+            // Display winner with visual pop
+            elWinnerDisplay.innerText = winner;
+            elWinnerDisplay.style.color = "var(--accent-glow)";
+            
+            // Move from remaining to picked
+            remainingNames.splice(winningIndex, 1);
+            pickedNames.push(winner);
+
+            updateUI();
+            isSpinning = false;
+
+            // Check if everyone has gone
+            if (remainingNames.length > 0) {
+                elSpinBtn.disabled = false;
+                elSpinBtn.innerText = "Pick Next Team Member";
+            } else {
+                elSpinBtn.disabled = true;
+                elSpinBtn.innerText = "Standup Complete!";
+                elWinnerDisplay.innerText += " 🎉"; // Add celebration to last person
+            }
+        }
+
+        /**
+         * Re-renders the tracking lists on the right panel.
+         */
+        function updateUI() {
+            // Update counts
+            elRemCount.innerText = remainingNames.length;
+            elCompCount.innerText = pickedNames.length;
+
+            // Render remaining list
+            elRemainingList.innerHTML = '';
+            remainingNames.forEach(name => {
+                const li = document.createElement('li');
+                li.innerText = name;
+                elRemainingList.appendChild(li);
+            });
+
+            // Render picked list
+            elPickedList.innerHTML = '';
+            pickedNames.forEach(name => {
+                const li = document.createElement('li');
+                li.innerText = name;
+                elPickedList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
