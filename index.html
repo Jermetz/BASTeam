@@ -3,149 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Standup Selector</title>
+    <title>Salesforce Standup - Flyout Selector</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --bg-color: #0b101e; /* Deep space dark */
-            --panel-bg: #162032;
-            --text-main: #e0e6ed;
-            --accent-glow: #1589ee; /* Tech/Salesforce Blue */
-            --success-color: #04844b;
+            --sf-blue-bg: #0b101e; /* Deep space dark */
+            --sf-blue-main: #1589ee; /* Salesforce Blue */
+            --sf-text: #e0e6ed;
+            --list-bg: #162032;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: var(--sf-blue-bg);
+            color: var(--sf-text);
             margin: 0;
             padding: 20px;
             display: flex;
             height: 100vh;
-            box-sizing: border-box;
             overflow: hidden;
+            box-sizing: border-box;
         }
 
-        /* Layout */
-        .sidebar {
-            width: 300px;
-            background-color: var(--panel-bg);
-            padding: 20px;
+        /* -------------------------------------------
+           CONFIGURATION PANEL (Left Sidebar)
+        ------------------------------------------- */
+        #configPanel {
+            width: 320px;
+            background-color: var(--list-bg);
+            padding: 25px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        .main-stage {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .tracking-panel {
-            width: 250px;
-            background-color: var(--panel-bg);
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        /* Typography & Elements */
-        h2 {
+        #configPanel h2 {
             margin-top: 0;
-            font-size: 1.2rem;
-            color: var(--accent-glow);
+            color: var(--sf-blue-main);
             text-transform: uppercase;
             letter-spacing: 2px;
-            border-bottom: 1px solid rgba(21, 137, 238, 0.3);
+            border-bottom: 2px solid rgba(21, 137, 238, 0.3);
             padding-bottom: 10px;
         }
 
-        textarea {
-            width: 100%;
+        #nameInput {
             flex-grow: 1;
-            background-color: rgba(0,0,0,0.2);
+            background-color: rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.1);
-            color: var(--text-main);
+            color: var(--sf-text);
             padding: 10px;
             border-radius: 6px;
             resize: none;
             font-family: monospace;
             margin-bottom: 15px;
-            box-sizing: border-box;
         }
 
         button {
-            background-color: var(--accent-glow);
+            background-color: var(--sf-blue-main);
             color: white;
             border: none;
             padding: 12px 20px;
             border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
             cursor: pointer;
             transition: all 0.2s;
             text-transform: uppercase;
+            font-weight: bold;
             letter-spacing: 1px;
         }
 
         button:hover {
             background-color: #0070d2;
-            box-shadow: 0 0 15px rgba(21, 137, 238, 0.6);
+            box-shadow: 0 0 10px rgba(21, 137, 238, 0.5);
         }
 
         button:disabled {
-            background-color: #555;
+            background-color: #444;
             cursor: not-allowed;
-            box-shadow: none;
+            opacity: 0.6;
         }
 
-        /* Main Stage Elements */
-        .title {
-            font-size: 2.5rem;
-            font-weight: 300;
-            margin-bottom: 40px;
-            letter-spacing: 3px;
-            color: #fff;
-        }
-
-        .winner-display {
-            font-size: 5rem;
-            font-weight: bold;
-            min-height: 120px;
+        /* -------------------------------------------
+           MAIN STAGE (Center Screen)
+        ------------------------------------------- */
+        #mainStage {
+            flex-grow: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            margin-bottom: 50px;
-            color: var(--accent-glow);
-            text-shadow: 0 0 20px rgba(21, 137, 238, 0.4);
-            transition: all 0.1s;
+            justify-content: flex-end; /* Push logo to the bottom */
+            padding: 20px;
+            position: relative;
         }
 
-        .spin-btn {
-            font-size: 1.5rem;
-            padding: 20px 50px;
-            border-radius: 50px;
-            background: linear-gradient(135deg, var(--accent-glow) 0%, #005fb2 100%);
+        /* The flying container for the single chosen name */
+        #flyoutContainer {
+            position: absolute;
+            bottom: 150px; /* Start position relative to logo */
+            transform-origin: bottom center; /* Scale and translate relative to bottom */
+            opacity: 0; /* Hidden initially */
+            display: none;
         }
 
-        /* Lists */
+        #theWinnerName {
+            font-size: 5.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(255,255,255,0.7);
+            color: #fff;
+            white-space: nowrap; /* Avoid wrapping */
+        }
+
+        /* The rapid-cycle temporary display (waiting room) */
+        #spinPreview {
+            font-size: 3rem;
+            color: rgba(255,255,255,0.4);
+            font-style: italic;
+            position: absolute;
+            bottom: 250px;
+            display: none; /* Only show when spinning */
+        }
+
+        /* CSS Animation for the Name Fly-Out */
+        @keyframes flyOut {
+            0% {
+                transform: translate(0, 0) scale(0.1) rotate(0deg);
+                opacity: 1;
+                display: block;
+            }
+            70% {
+                transform: translate(0, -350px) scale(1.05) rotate(-10deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(0, -320px) scale(1) rotate(0deg);
+                opacity: 1;
+                display: block;
+            }
+        }
+
+        .flyout-animate {
+            animation: flyOut 1.2s ease-out forwards;
+            display: block !important;
+        }
+
+        /* The 'source' objects at the bottom */
+        #sourceLogo {
+            width: 300px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px rgba(21, 137, 238, 0.4));
+        }
+
+        #astro {
+            width: 130px;
+            position: absolute;
+            bottom: 15px;
+            right: 150px; /* Offset near the logo */
+        }
+
+        /* -------------------------------------------
+           TRACKING PANEL (Right Sidebar)
+        ------------------------------------------- */
+        #trackingPanel {
+            width: 280px;
+            background-color: var(--list-bg);
+            padding: 25px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #trackingPanel h3 {
+            font-size: 1.1rem;
+            color: var(--sf-blue-main);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(21, 137, 238, 0.2);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
         ul {
             list-style: none;
             padding: 0;
-            margin: 0;
             overflow-y: auto;
             flex-grow: 1;
+            margin-bottom: 20px;
         }
 
         li {
-            padding: 8px 12px;
+            padding: 8px 10px;
             margin-bottom: 5px;
             background-color: rgba(255,255,255,0.05);
             border-radius: 4px;
@@ -154,165 +201,197 @@
             align-items: center;
         }
 
-        .picked-list li {
-            text-decoration: line-through;
-            color: #888;
-            border-left: 3px solid var(--success-color);
+        .waiting-list li {
+            border-left: 4px solid var(--sf-blue-main);
         }
 
-        .remaining-list li {
-            border-left: 3px solid var(--accent-glow);
+        .completed-list li {
+            text-decoration: line-through;
+            color: #888;
+            border-left: 4px solid #04844b; /* Success green */
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>Daily Roster</h2>
-        <p style="font-size: 0.8rem; color: #aaa;">Paste team names below (one per line). Update this daily as needed.</p>
-        <textarea id="nameInput">
-Admin Alex
-Developer Dan
-BA Brianna
-CPQ Chris
-Support Sam</textarea>
-        <button onclick="loadRoster()">Initialize Roster</button>
+    <div id="configPanel">
+        <h2>Roster Setup</h2>
+        <textarea id="nameInput" placeholder="Paste names here... (one per line)">
+Alex (Admin)
+Brianna (BA)
+Dan (Developer)
+Sam (Support)
+Chris (CPQ Specialist)</textarea>
+        <button onclick="initializeRoster()">Initialize Roster</button>
     </div>
 
-    <div class="main-stage">
-        <div class="title">Galactic Standup Selector</div>
-        <div class="winner-display" id="winnerDisplay">SYSTEM READY</div>
-        <button class="spin-btn" id="spinBtn" onclick="spinWheel()" disabled>Pick Next Team Member</button>
+    <div id="mainStage">
+        <div id="spinPreview">Searching...</div>
+
+        <div id="flyoutContainer">
+            <div id="theWinnerName">TEST NAME</div>
+        </div>
+
+<img id="sourceLogo" src="logo.png" alt="NextGen Healthcare Logo">
+        ```
+6. Scroll down and click the green **Commit changes...** button.
+
+Once GitHub Pages rebuilds the site (usually within a minute), simply refresh your live URL. The randomizer will now launch the names directly out of your logo! 
+
+Would you also like instructions on how to easily adjust the CSS sizing properties in the code so your new logo fits perfectly on the screen?
     </div>
 
-    <div class="tracking-panel">
-        <h2>Remaining (<span id="remCount">0</span>)</h2>
-        <ul id="remainingList" class="remaining-list" style="margin-bottom: 20px;"></ul>
-        
-        <h2>Completed (<span id="compCount">0</span>)</h2>
-        <ul id="pickedList" class="picked-list"></ul>
+    <div id="trackingPanel">
+        <h3>Waiting In Orbit (<span id="waitingCount">0</span>)</h3>
+        <ul id="waitingList" class="waiting-list"></ul>
+
+        <h3>Completed Release (<span id="completedCount">0</span>)</h3>
+        <ul id="completedList" class="completed-list"></ul>
+
+        <button id="pickBtn" onclick="initiatePick()" disabled>Randomize Next Pick</button>
     </div>
 
     <script>
-        /**
-         * Core logic for tracking and randomly selecting team members.
-         */
-        let remainingNames = [];
-        let pickedNames = [];
+        // Core Logic State
+        let waitingInOrbit = [];
+        let completedRelease = [];
         let isSpinning = false;
 
         // DOM Elements
-        const elNameInput = document.getElementById('nameInput');
-        const elWinnerDisplay = document.getElementById('winnerDisplay');
-        const elSpinBtn = document.getElementById('spinBtn');
-        const elRemainingList = document.getElementById('remainingList');
-        const elPickedList = document.getElementById('pickedList');
-        const elRemCount = document.getElementById('remCount');
-        const elCompCount = document.getElementById('compCount');
+        const elInput = document.getElementById('nameInput');
+        const elWaitingCount = document.getElementById('waitingCount');
+        const elWaitingList = document.getElementById('waitingList');
+        const elCompletedCount = document.getElementById('completedCount');
+        const elCompletedList = document.getElementById('completedList');
+        const elPickBtn = document.getElementById('pickBtn');
+        const elFlyout = document.getElementById('flyoutContainer');
+        const elWinnerName = document.getElementById('theWinnerName');
+        const elSpinPreview = document.getElementById('spinPreview');
 
         /**
-         * Reads the textarea, clears previous state, and loads the fresh roster.
+         * 1. Dynamic Setup: Reads and processes the text input.
          */
-        function loadRoster() {
-            const rawText = elNameInput.value;
-            // Split by line break, trim whitespace, and remove empty lines
-            remainingNames = rawText.split('\n')
-                                    .map(name => name.trim())
-                                    .filter(name => name.length > 0);
+        function initializeRoster() {
+            const rawText = elInput.value;
+            // Split by line break, remove whitespace, ignore empty lines
+            waitingInOrbit = rawText.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+            completedRelease = [];
             
-            pickedNames = [];
-            
-            if (remainingNames.length === 0) {
-                alert("Please add at least one name to the roster.");
+            if (waitingInOrbit.length === 0) {
+                alert("Please add at least one name to the input roster.");
                 return;
             }
 
-            elWinnerDisplay.innerText = "ROSTER LOADED";
-            elWinnerDisplay.style.color = "var(--text-main)";
-            elSpinBtn.disabled = false;
-            
-            updateUI();
+            // Reset UI state
+            updateTrackingLists();
+            elFlyout.style.display = 'none'; // Hide any previous winner
+            elFlyout.classList.remove('flyout-animate');
+            elSpinPreview.style.display = 'none';
+
+            elPickBtn.disabled = false;
+            elPickBtn.innerText = "Randomize Next Pick";
         }
 
         /**
-         * Handles the animation and selection logic.
+         * 2. Controlled Pick: Start the visual sequence.
          */
-        function spinWheel() {
-            if (isSpinning || remainingNames.length === 0) return;
-            
+        function initiatePick() {
+            if (isSpinning || waitingInOrbit.length === 0) return;
+
             isSpinning = true;
-            elSpinBtn.disabled = true;
-            elWinnerDisplay.style.color = "var(--text-main)";
+            elPickBtn.disabled = true;
+            elPickBtn.innerText = "Initializing Release...";
+            
+            // Step A: Hide previous winner, clear animation class
+            elFlyout.style.display = 'none';
+            elFlyout.classList.remove('flyout-animate');
 
-            let shuffleCount = 0;
-            const maxShuffles = 20; // Number of rapid flashes before stopping
-            const shuffleSpeed = 70; // Milliseconds between flashes
+            // Step B: Show and run rapid "spin" sequence
+            elSpinPreview.style.display = 'block';
 
-            // Rapid-cycle animation to build suspense
-            const shuffleInterval = setInterval(() => {
-                const randomVisualIndex = Math.floor(Math.random() * remainingNames.length);
-                elWinnerDisplay.innerText = remainingNames[randomVisualIndex];
-                shuffleCount++;
+            let rapidInterval;
+            let currentFlashIndex = 0;
+            rapidInterval = setInterval(() => {
+                // Flash random names
+                let randomVisualIndex = Math.floor(Math.random() * waitingInOrbit.length);
+                elSpinPreview.innerText = waitingInOrbit[randomVisualIndex];
+            }, 80); // Speed of flashes (ms)
 
-                if (shuffleCount >= maxShuffles) {
-                    clearInterval(shuffleInterval);
-                    finalizePick();
-                }
-            }, shuffleSpeed);
+            // Step C: End rapid spin and define actual winner after 1.5 seconds
+            setTimeout(() => {
+                clearInterval(rapidInterval);
+                elSpinPreview.style.display = 'none'; // Hide the searching text
+                
+                finalizeRelease(); // Lock in choice and trigger flyout
+            }, 1500);
         }
 
         /**
-         * Locks in the final choice, moves them between arrays, and updates DOM.
+         * 3. Animate & Execute: Display the final pick with flyout and confetti.
          */
-        function finalizePick() {
-            // Select the actual winner
-            const winningIndex = Math.floor(Math.random() * remainingNames.length);
-            const winner = remainingNames[winningIndex];
+        function finalizeRelease() {
+            // Lock in winner
+            const actualWinningIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            const winner = waitingInOrbit[actualWinningIndex];
 
-            // Display winner with visual pop
-            elWinnerDisplay.innerText = winner;
-            elWinnerDisplay.style.color = "var(--accent-glow)";
-            
-            // Move from remaining to picked
-            remainingNames.splice(winningIndex, 1);
-            pickedNames.push(winner);
+            // Set final name and start FLYOUT animation
+            elWinnerName.innerText = winner;
+            elFlyout.classList.add('flyout-animate'); // CSS triggers the flying action
 
-            updateUI();
+            // Move arrays
+            waitingInOrbit.splice(actualWinningIndex, 1);
+            completedRelease.push(winner);
+            updateTrackingLists();
+
+            // Fire Salesforce Confetti! (Blues, White, and role-color dots)
+            fireConfetti();
+
             isSpinning = false;
-
-            // Check if everyone has gone
-            if (remainingNames.length > 0) {
-                elSpinBtn.disabled = false;
-                elSpinBtn.innerText = "Pick Next Team Member";
+            if (waitingInOrbit.length > 0) {
+                elPickBtn.disabled = false;
+                elPickBtn.innerText = "Randomize Next Pick";
             } else {
-                elSpinBtn.disabled = true;
-                elSpinBtn.innerText = "Standup Complete!";
-                elWinnerDisplay.innerText += " 🎉"; // Add celebration to last person
+                elPickBtn.disabled = true;
+                elPickBtn.innerText = "Standup Complete!";
+                elPickBtn.style.backgroundColor = "#04844b"; // Green
+                
+                // Add a final 'Completed' burst of confetti
+                setTimeout(fireConfetti, 500);
             }
         }
 
         /**
-         * Re-renders the tracking lists on the right panel.
+         * Re-renders the two tracking columns on the right panel.
          */
-        function updateUI() {
-            // Update counts
-            elRemCount.innerText = remainingNames.length;
-            elCompCount.innerText = pickedNames.length;
+        function updateTrackingLists() {
+            elWaitingCount.innerText = waitingInOrbit.length;
+            elCompletedCount.innerText = completedRelease.length;
 
-            // Render remaining list
-            elRemainingList.innerHTML = '';
-            remainingNames.forEach(name => {
+            elWaitingList.innerHTML = '';
+            waitingInOrbit.forEach(name => {
                 const li = document.createElement('li');
                 li.innerText = name;
-                elRemainingList.appendChild(li);
+                elWaitingList.appendChild(li);
             });
 
-            // Render picked list
-            elPickedList.innerHTML = '';
-            pickedNames.forEach(name => {
+            elCompletedList.innerHTML = '';
+            completedRelease.forEach(name => {
                 const li = document.createElement('li');
                 li.innerText = name;
-                elPickedList.appendChild(li);
+                elCompletedList.appendChild(li);
+            });
+        }
+
+        /**
+         * Utility function for 'canvas-confetti' library.
+         */
+        function fireConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 90,
+                origin: { y: 0.6 }, // Start slightly lower than screen center
+                colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], // Salesforce Blue, White, Green, Orange
+                shapes: ['circle', 'square']
             });
         }
     </script>
