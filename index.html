@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --sf-blue-bg: #0b101e; /* Deep space dark */
-            --sf-blue-main: #1589ee; /* Salesforce Blue */
+            --sf-blue-bg: #0b101e; 
+            --sf-blue-main: #1589ee; 
             --sf-text: #e0e6ed;
             --list-bg: #162032;
         }
@@ -91,17 +91,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end; /* Push logo to the bottom */
+            justify-content: flex-end; 
             padding: 20px;
             position: relative;
         }
 
-        /* The flying container for the single chosen name */
         #flyoutContainer {
             position: absolute;
-            bottom: 150px; /* Start position relative to logo */
-            transform-origin: bottom center; /* Scale and translate relative to bottom */
-            opacity: 0; /* Hidden initially */
+            bottom: 150px; 
+            transform-origin: bottom center; 
+            opacity: 0; 
             display: none;
         }
 
@@ -110,20 +109,18 @@
             font-weight: bold;
             text-shadow: 0 0 30px rgba(255,255,255,0.7);
             color: #fff;
-            white-space: nowrap; /* Avoid wrapping */
+            white-space: nowrap; 
         }
 
-        /* The rapid-cycle temporary display (waiting room) */
         #spinPreview {
             font-size: 3rem;
             color: rgba(255,255,255,0.4);
             font-style: italic;
             position: absolute;
             bottom: 250px;
-            display: none; /* Only show when spinning */
+            display: none; 
         }
 
-        /* CSS Animation for the Name Fly-Out */
         @keyframes flyOut {
             0% {
                 transform: translate(0, 0) scale(0.1) rotate(0deg);
@@ -146,18 +143,11 @@
             display: block !important;
         }
 
-        /* The 'source' objects at the bottom */
+        /* The source object at the bottom */
         #sourceLogo {
             width: 300px;
             margin-bottom: 10px;
             filter: drop-shadow(0 0 10px rgba(21, 137, 238, 0.4));
-        }
-
-        #astro {
-            width: 130px;
-            position: absolute;
-            bottom: 15px;
-            right: 150px; /* Offset near the logo */
         }
 
         /* -------------------------------------------
@@ -208,7 +198,7 @@
         .completed-list li {
             text-decoration: line-through;
             color: #888;
-            border-left: 4px solid #04844b; /* Success green */
+            border-left: 4px solid #04844b; 
         }
     </style>
 </head>
@@ -232,13 +222,7 @@ Chris (CPQ Specialist)</textarea>
             <div id="theWinnerName">TEST NAME</div>
         </div>
 
-<img id="sourceLogo" src="logo.png" alt="NextGen Healthcare Logo">
-        ```
-6. Scroll down and click the green **Commit changes...** button.
-
-Once GitHub Pages rebuilds the site (usually within a minute), simply refresh your live URL. The randomizer will now launch the names directly out of your logo! 
-
-Would you also like instructions on how to easily adjust the CSS sizing properties in the code so your new logo fits perfectly on the screen?
+        <img id="sourceLogo" src="logo.png" alt="NextGen Healthcare Logo">
     </div>
 
     <div id="trackingPanel">
@@ -390,7 +374,7 @@ Would you also like instructions on how to easily adjust the CSS sizing properti
                 particleCount: 150,
                 spread: 90,
                 origin: { y: 0.6 }, // Start slightly lower than screen center
-                colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], // Salesforce Blue, White, Green, Orange
+                colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], 
                 shapes: ['circle', 'square']
             });
         }
