@@ -105,7 +105,7 @@
         }
 
         #theWinnerName {
-            font-size: 5.5rem;
+            font-size: 7.5rem; /* Increased size */
             font-weight: bold;
             text-shadow: 0 0 30px rgba(255,255,255,0.7);
             color: #fff;
@@ -125,7 +125,7 @@
             0% {
                 transform: translate(0, 0) scale(0.1) rotate(0deg);
                 opacity: 1;
-                display: block;
+                display: flex; /* Changed to accommodate trumpets */
             }
             70% {
                 transform: translate(0, -350px) scale(1.05) rotate(-10deg);
@@ -134,20 +134,77 @@
             100% {
                 transform: translate(0, -320px) scale(1) rotate(0deg);
                 opacity: 1;
-                display: block;
+                display: flex; /* Changed to accommodate trumpets */
             }
         }
 
         .flyout-animate {
             animation: flyOut 1.2s ease-out forwards;
-            display: block !important;
+            display: flex !important; /* Changed to accommodate trumpets */
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
         }
 
         /* The source object at the bottom */
         #sourceLogo {
-            width: 300px;
+            width: 450px; /* Increased size */
             margin-bottom: 10px;
             filter: drop-shadow(0 0 10px rgba(21, 137, 238, 0.4));
+        }
+
+        /* -------------------------------------------
+           TRUMPET & NOTES ANIMATIONS
+        ------------------------------------------- */
+        .trumpet-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .trumpet {
+            font-size: 5rem;
+            display: inline-block;
+        }
+
+        .left-trumpet {
+            transform: scaleX(-1); /* Flips bell to face the text */
+            animation: pulsateLeft 0.4s infinite alternate ease-in-out;
+        }
+
+        .right-trumpet {
+            animation: pulsateRight 0.4s infinite alternate ease-in-out;
+        }
+
+        .notes {
+            font-size: 3rem;
+            position: absolute;
+            opacity: 0;
+        }
+
+        .flyout-animate .notes.left-notes {
+            left: 70px;
+            animation: floatNotes 1.2s infinite ease-out;
+        }
+
+        .flyout-animate .notes.right-notes {
+            right: 70px;
+            animation: floatNotes 1.2s infinite ease-out 0.3s; /* Slight delay for variation */
+        }
+
+        @keyframes pulsateLeft {
+            0% { transform: scaleX(-1) scale(1); }
+            100% { transform: scaleX(-1) scale(1.2); }
+        }
+
+        @keyframes pulsateRight {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+
+        @keyframes floatNotes {
+            0% { transform: translateY(10px) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
         }
 
         /* -------------------------------------------
@@ -219,7 +276,17 @@ Chris (CPQ Specialist)</textarea>
         <div id="spinPreview">Searching...</div>
 
         <div id="flyoutContainer">
+            <div class="trumpet-container">
+                <span class="trumpet left-trumpet">🎺</span>
+                <span class="notes left-notes">🎵</span>
+            </div>
+            
             <div id="theWinnerName">TEST NAME</div>
+            
+            <div class="trumpet-container">
+                <span class="notes right-notes">🎶</span>
+                <span class="trumpet right-trumpet">🎺</span>
+            </div>
         </div>
 
         <img id="sourceLogo" src="logo.png" alt="NextGen Healthcare Logo">
@@ -370,13 +437,25 @@ Chris (CPQ Specialist)</textarea>
          * Utility function for 'canvas-confetti' library.
          */
         function fireConfetti() {
+            // Primary Burst
             confetti({
-                particleCount: 150,
-                spread: 90,
+                particleCount: 250, // Increased for extra confetti
+                spread: 120,
                 origin: { y: 0.6 }, // Start slightly lower than screen center
                 colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], 
                 shapes: ['circle', 'square']
             });
+            
+            // Secondary Delayed Burst
+            setTimeout(() => {
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.5 }, 
+                    colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], 
+                    shapes: ['circle', 'square']
+                });
+            }, 300);
         }
     </script>
 </body>
