@@ -307,6 +307,7 @@ Chris (CPQ Specialist)</textarea>
         let waitingInOrbit = [];
         let completedRelease = [];
         let isSpinning = false;
+        let trumpetConfettiInterval = null; // New state for trumpet bursts
 
         // DOM Elements
         const elInput = document.getElementById('nameInput');
@@ -333,6 +334,12 @@ Chris (CPQ Specialist)</textarea>
                 return;
             }
 
+            // Clear any active trumpet confetti
+            if (trumpetConfettiInterval) {
+                clearInterval(trumpetConfettiInterval);
+                trumpetConfettiInterval = null;
+            }
+
             // Reset UI state
             updateTrackingLists();
             elFlyout.style.display = 'none'; // Hide any previous winner
@@ -348,6 +355,12 @@ Chris (CPQ Specialist)</textarea>
          */
         function initiatePick() {
             if (isSpinning || waitingInOrbit.length === 0) return;
+
+            // Clear any active trumpet confetti from the previous winner
+            if (trumpetConfettiInterval) {
+                clearInterval(trumpetConfettiInterval);
+                trumpetConfettiInterval = null;
+            }
 
             isSpinning = true;
             elPickBtn.disabled = true;
@@ -397,6 +410,9 @@ Chris (CPQ Specialist)</textarea>
             // Fire Salesforce Confetti! (Blues, White, and role-color dots)
             fireConfetti();
 
+            // Start the repeating 3-second trumpet bursts
+            trumpetConfettiInterval = setInterval(fireTrumpetConfetti, 3000);
+
             isSpinning = false;
             if (waitingInOrbit.length > 0) {
                 elPickBtn.disabled = false;
@@ -434,14 +450,14 @@ Chris (CPQ Specialist)</textarea>
         }
 
         /**
-         * Utility function for 'canvas-confetti' library.
+         * Utility function for the main screen-wide burst
          */
         function fireConfetti() {
             // Primary Burst
             confetti({
-                particleCount: 250, // Increased for extra confetti
+                particleCount: 250, 
                 spread: 120,
-                origin: { y: 0.6 }, // Start slightly lower than screen center
+                origin: { y: 0.6 }, 
                 colors: ['#1589ee', '#fff', '#04844b', '#ffb75d'], 
                 shapes: ['circle', 'square']
             });
@@ -456,6 +472,44 @@ Chris (CPQ Specialist)</textarea>
                     shapes: ['circle', 'square']
                 });
             }, 300);
+        }
+
+        /**
+         * Calculates trumpet coordinates and fires confetti directly from them
+         */
+        function fireTrumpetConfetti() {
+            const leftTrumpet = document.querySelector('.left-trumpet');
+            const rightTrumpet = document.querySelector('.right-trumpet');
+
+            if (leftTrumpet && rightTrumpet && elFlyout.style.display !== 'none') {
+                const leftRect = leftTrumpet.getBoundingClientRect();
+                const rightRect = rightTrumpet.getBoundingClientRect();
+
+                // Convert pixel coordinates to percentage for canvas-confetti
+                const leftX = (leftRect.left + leftRect.width / 2) / window.innerWidth;
+                const leftY = (leftRect.top + leftRect.height / 2) / window.innerHeight;
+
+                const rightX = (rightRect.left + rightRect.width / 2) / window.innerWidth;
+                const rightY = (rightRect.top + rightRect.height / 2) / window.innerHeight;
+
+                // Left Trumpet (Shooting Up and Right)
+                confetti({
+                    particleCount: 40,
+                    angle: 60,
+                    spread: 45,
+                    origin: { x: leftX, y: leftY },
+                    colors: ['#1589ee', '#fff', '#ffb75d']
+                });
+
+                // Right Trumpet (Shooting Up and Left)
+                confetti({
+                    particleCount: 40,
+                    angle: 120, 
+                    spread: 45,
+                    origin: { x: rightX, y: rightY },
+                    colors: ['#1589ee', '#fff', '#04844b']
+                });
+            }
         }
     </script>
 </body>
