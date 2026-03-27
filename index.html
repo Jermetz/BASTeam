@@ -96,6 +96,19 @@
             position: relative;
         }
 
+        #onDeckPreview {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
         #flyoutContainer {
             position: absolute;
             bottom: 150px; 
@@ -257,6 +270,38 @@
             color: #888;
             border-left: 4px solid #04844b; 
         }
+
+        .skip-btn {
+            background: none;
+            border: none;
+            color: white;
+            padding: 0 5px;
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            text-transform: none;
+        }
+
+        .skip-btn:hover {
+            opacity: 1;
+            box-shadow: none;
+            background: none;
+        }
+
+        #undoBtn {
+            margin-top: 10px;
+            background-color: #c23934; /* Salesforce Error Red */
+        }
+
+        #undoBtn:hover {
+            background-color: #a62a26;
+        }
+
+        #undoBtn:disabled {
+            background-color: #444;
+        }
     </style>
 </head>
 <body>
@@ -273,6 +318,7 @@ Chris (CPQ Specialist)</textarea>
     </div>
 
     <div id="mainStage">
+        <div id="onDeckPreview">On Deck: <strong id="onDeckName"></strong></div>
         <div id="spinPreview">Searching...</div>
 
         <div id="flyoutContainer">
@@ -300,6 +346,7 @@ Chris (CPQ Specialist)</textarea>
         <ul id="completedList" class="completed-list"></ul>
 
         <button id="pickBtn" onclick="initiatePick()" disabled>Randomize Next Pick</button>
+        <button id="undoBtn" onclick="undoLastPick()" disabled>Undo Last Pick</button>
     </div>
 
     <script>
@@ -308,6 +355,7 @@ Chris (CPQ Specialist)</textarea>
         let completedRelease = [];
         let isSpinning = false;
         let trumpetConfettiInterval = null; // New state for trumpet bursts
+        let nextWinnerIndex = null; // State for On Deck feature
 
         // DOM Elements
         const elInput = document.getElementById('nameInput');
@@ -319,12 +367,26 @@ Chris (CPQ Specialist)</textarea>
         const elFlyout = document.getElementById('flyoutContainer');
         const elWinnerName = document.getElementById('theWinnerName');
         const elSpinPreview = document.getElementById('spinPreview');
+        const elOnDeckPreview = document.getElementById('onDeckPreview');
+        const elOnDeckName = document.getElementById('onDeckName');
+        const elUndoBtn = document.getElementById('undoBtn');
+
+        // Feature 2: Load roster from local storage on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedRoster = localStorage.getItem('sfStandupRoster');
+            if (savedRoster) {
+                elInput.value = savedRoster;
+            }
+        });
 
         /**
          * 1. Dynamic Setup: Reads and processes the text input.
          */
         function initializeRoster() {
             const rawText = elInput.value;
+            // Feature 2: Save roster to local storage
+            localStorage.setItem('sfStandupRoster', rawText);
+
             // Split by line break, remove whitespace, ignore empty lines
             waitingInOrbit = rawText.split('\n').map(name => name.trim()).filter(name => name.length > 0);
             completedRelease = [];
@@ -340,6 +402,11 @@ Chris (CPQ Specialist)</textarea>
                 trumpetConfettiInterval = null;
             }
 
+            // Set up initial On Deck
+            nextWinnerIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            elOnDeckName.innerText = waitingInOrbit[nextWinnerIndex];
+            elOnDeckPreview.style.display = 'block';
+
             // Reset UI state
             updateTrackingLists();
             elFlyout.style.display = 'none'; // Hide any previous winner
@@ -348,6 +415,8 @@ Chris (CPQ Specialist)</textarea>
 
             elPickBtn.disabled = false;
             elPickBtn.innerText = "Randomize Next Pick";
+            elPickBtn.style.backgroundColor = "var(--sf-blue-main)";
+            elUndoBtn.disabled = true;
         }
 
         /**
@@ -364,6 +433,7 @@ Chris (CPQ Specialist)</textarea>
 
             isSpinning = true;
             elPickBtn.disabled = true;
+            elUndoBtn.disabled = true;
             elPickBtn.innerText = "Initializing Release...";
             
             // Step A: Hide previous winner, clear animation class
@@ -374,7 +444,6 @@ Chris (CPQ Specialist)</textarea>
             elSpinPreview.style.display = 'block';
 
             let rapidInterval;
-            let currentFlashIndex = 0;
             rapidInterval = setInterval(() => {
                 // Flash random names
                 let randomVisualIndex = Math.floor(Math.random() * waitingInOrbit.length);
@@ -394,8 +463,14 @@ Chris (CPQ Specialist)</textarea>
          * 3. Animate & Execute: Display the final pick with flyout and confetti.
          */
         function finalizeRelease() {
-            // Lock in winner
-            const actualWinningIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            // Lock in winner using the pre-calculated On Deck index, or a fallback
+            let actualWinningIndex;
+            if (nextWinnerIndex !== null && nextWinnerIndex < waitingInOrbit.length) {
+                actualWinningIndex = nextWinnerIndex;
+            } else {
+                actualWinningIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            }
+            
             const winner = waitingInOrbit[actualWinningIndex];
 
             // Set final name and start FLYOUT animation
@@ -405,6 +480,17 @@ Chris (CPQ Specialist)</textarea>
             // Move arrays
             waitingInOrbit.splice(actualWinningIndex, 1);
             completedRelease.push(winner);
+            
+            // Feature 3: Calculate the next On Deck person
+            if (waitingInOrbit.length > 0) {
+                nextWinnerIndex = Math.floor(Math.random() * waitingInOrbit.length);
+                elOnDeckName.innerText = waitingInOrbit[nextWinnerIndex];
+                elOnDeckPreview.style.display = 'block';
+            } else {
+                nextWinnerIndex = null;
+                elOnDeckPreview.style.display = 'none';
+            }
+
             updateTrackingLists();
 
             // Fire Salesforce Confetti! (Blues, White, and role-color dots)
@@ -414,6 +500,8 @@ Chris (CPQ Specialist)</textarea>
             trumpetConfettiInterval = setInterval(fireTrumpetConfetti, 3000);
 
             isSpinning = false;
+            elUndoBtn.disabled = false; // Feature 5: Enable Undo
+
             if (waitingInOrbit.length > 0) {
                 elPickBtn.disabled = false;
                 elPickBtn.innerText = "Randomize Next Pick";
@@ -435,9 +523,18 @@ Chris (CPQ Specialist)</textarea>
             elCompletedCount.innerText = completedRelease.length;
 
             elWaitingList.innerHTML = '';
-            waitingInOrbit.forEach(name => {
+            waitingInOrbit.forEach((name, index) => {
                 const li = document.createElement('li');
                 li.innerText = name;
+
+                // Feature 4: Add Skip Button
+                const skipBtn = document.createElement('button');
+                skipBtn.innerText = '⏭️';
+                skipBtn.className = 'skip-btn';
+                skipBtn.title = 'Mark Absent / Skip';
+                skipBtn.onclick = () => skipPerson(index);
+                li.appendChild(skipBtn);
+
                 elWaitingList.appendChild(li);
             });
 
@@ -447,6 +544,75 @@ Chris (CPQ Specialist)</textarea>
                 li.innerText = name;
                 elCompletedList.appendChild(li);
             });
+        }
+
+        /**
+         * Feature 4: Skips a person inline
+         */
+        function skipPerson(index) {
+            if (isSpinning) return;
+
+            // Adjust the nextWinnerIndex if needed before removing
+            if (index === nextWinnerIndex) {
+                nextWinnerIndex = null; 
+            } else if (nextWinnerIndex !== null && index < nextWinnerIndex) {
+                nextWinnerIndex--; 
+            }
+
+            waitingInOrbit.splice(index, 1);
+
+            // Recalculate On Deck
+            if (nextWinnerIndex === null && waitingInOrbit.length > 0) {
+                nextWinnerIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            }
+
+            if (waitingInOrbit.length > 0) {
+                elOnDeckName.innerText = waitingInOrbit[nextWinnerIndex];
+                elOnDeckPreview.style.display = 'block';
+            } else {
+                elOnDeckPreview.style.display = 'none';
+                if (completedRelease.length > 0) {
+                    elPickBtn.disabled = true;
+                    elPickBtn.innerText = "Standup Complete!";
+                    elPickBtn.style.backgroundColor = "#04844b";
+                } else {
+                    elPickBtn.disabled = true; // Everyone skipped
+                }
+            }
+
+            updateTrackingLists();
+        }
+
+        /**
+         * Feature 5: Undo last pick
+         */
+        function undoLastPick() {
+            if (completedRelease.length === 0 || isSpinning) return;
+
+            const lastPerson = completedRelease.pop();
+            waitingInOrbit.push(lastPerson);
+
+            // Stop current confetti
+            if (trumpetConfettiInterval) {
+                clearInterval(trumpetConfettiInterval);
+                trumpetConfettiInterval = null;
+            }
+            elFlyout.style.display = 'none';
+            elFlyout.classList.remove('flyout-animate');
+
+            elUndoBtn.disabled = true; // Disable until another pick is made
+            
+            // Reset main button
+            elPickBtn.disabled = false;
+            elPickBtn.innerText = "Randomize Next Pick";
+            elPickBtn.style.backgroundColor = "var(--sf-blue-main)";
+
+            // Pick a new On Deck person (could be the one pushed back, or someone else)
+            nextWinnerIndex = Math.floor(Math.random() * waitingInOrbit.length);
+            elOnDeckName.innerText = waitingInOrbit[nextWinnerIndex];
+            elOnDeckPreview.style.display = 'block';
+
+            updateTrackingLists();
         }
 
         /**
