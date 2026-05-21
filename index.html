@@ -359,6 +359,9 @@ Chris (CPQ Specialist)</textarea>
         let trumpetConfettiInterval = null; 
         let nextWinnerIndex = null; 
 
+     // Audio Elements
+        const tadaSound = new Audio('tada.wav');
+
         // DOM Elements
         const elInput = document.getElementById('nameInput');
         const elWaitingCount = document.getElementById('waitingCount');
@@ -460,6 +463,10 @@ Chris (CPQ Specialist)</textarea>
             waitingInOrbit.splice(actualWinningIndex, 1);
             completedRelease.push(winner);
             updateTrackingLists();
+
+ // Play the tada sound (resetting it to 0 first in case they click fast)
+            tadaSound.currentTime = 0; 
+            tadaSound.play();
 
             // Fire Confetti for the Winner immediately
             fireConfetti();
