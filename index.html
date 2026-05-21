@@ -118,15 +118,28 @@
             opacity: 0; 
             display: none;
         }
-
-        #theWinnerName {
+#theWinnerName {
             font-size: 7.5rem; 
             font-weight: bold;
-            text-shadow: 0 0 30px rgba(255,255,255,0.7);
-            color: #fff;
             white-space: nowrap; 
+            
+            /* Gradient text effect using your existing color palette */
+            background: linear-gradient(to right, #00ffd3, #1589ee, #ffb75d, #1589ee, #00ffd3);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            
+            /* Shimmer animation and drop shadow to make it pop */
+            animation: gradientShimmer 3s linear infinite;
+            filter: drop-shadow(0 0 15px rgba(21, 137, 238, 0.4));
         }
 
+        @keyframes gradientShimmer {
+            to {
+                background-position: 200% center;
+            }
+        }
         #spinPreview {
             font-size: 3rem;
             color: rgba(255,255,255,0.4);
