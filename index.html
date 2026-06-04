@@ -317,6 +317,50 @@
         #undoBtn:disabled {
             background-color: #444;
         }
+        /* -------------------------------------------
+           TIMER ANIMATIONS & STYLES
+        ------------------------------------------- */
+        #timerContainer {
+            margin-top: 15px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        #timeDisplay {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00ffd3;
+            margin-bottom: 5px;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.5s ease;
+        }
+
+        #progressTrack {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 100%;
+            background-color: #00ffd3;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+
+        .flash-red {
+            animation: pulseRed 1s infinite alternate;
+        }
+
+        @keyframes pulseRed {
+            0% { color: #ff4d4d; text-shadow: 0 0 10px rgba(255, 77, 77, 0.5); }
+            100% { color: #fff; text-shadow: 0 0 20px rgba(255, 77, 77, 1); }
+        }
     </style>
 </head>
 <body>
@@ -343,6 +387,13 @@ Chris (CPQ Specialist)</textarea>
             </div>
             
             <div id="theWinnerName">TEST NAME</div>
+            <div id="timerContainer">
+                <div id="timeDisplay">02:00</div>
+                <div id="progressTrack">
+                    <div id="progressBar"></div>
+                </div>
+            </div>
+
             
             <div class="trumpet-container">
                 <span class="notes right-notes">🎶</span>
@@ -374,6 +425,12 @@ Chris (CPQ Specialist)</textarea>
 
      // Audio Elements
         const tadaSound = new Audio('tada.wav');
+        const chimeSound = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'); // Using a reliable web asset so it works instantly
+
+        // Timer Variables
+        let standupTimerInterval = null;
+        const STANDUP_DURATION_SECONDS = 120;
+        let currentSecondsLeft = STANDUP_DURATION_SECONDS;
 
         // DOM Elements
         const elInput = document.getElementById('nameInput');
@@ -388,7 +445,60 @@ Chris (CPQ Specialist)</textarea>
         const elOnDeckPreview = document.getElementById('onDeckPreview');
         const elOnDeckName = document.getElementById('onDeckName');
         const elUndoBtn = document.getElementById('undoBtn');
+        const elTimerContainer = document.getElementById('timerContainer');
+        const elTimeDisplay = document.getElementById('timeDisplay');
+        const elProgressBar = document.getElementById('progressBar');
+// --- Timer Functions ---
+        function startTimer() {
+            stopTimer(); // Ensure no duplicates
+            currentSecondsLeft = STANDUP_DURATION_SECONDS;
+            elTimerContainer.style.display = 'flex';
+            elTimeDisplay.classList.remove('flash-red');
+            updateTimerVisuals();
+            
+            standupTimerInterval = setInterval(() => {
+                currentSecondsLeft--;
+                updateTimerVisuals();
+                
+                if (currentSecondsLeft <= 0) {
+                    clearInterval(standupTimerInterval);
+                    elTimeDisplay.classList.add('flash-red');
+                    chimeSound.play();
+                }
+            }, 1000);
+        }
 
+        function stopTimer() {
+            if (standupTimerInterval) {
+                clearInterval(standupTimerInterval);
+                standupTimerInterval = null;
+            }
+            elTimerContainer.style.display = 'none';
+            chimeSound.pause();
+            chimeSound.currentTime = 0;
+        }
+
+        function updateTimerVisuals() {
+            const minutes = Math.floor(currentSecondsLeft / 60);
+            const seconds = currentSecondsLeft % 60;
+            elTimeDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const percentage = (currentSecondsLeft / STANDUP_DURATION_SECONDS) * 100;
+            elProgressBar.style.width = `${percentage}%`;
+            
+            // Turn orange at 30 seconds, red at 10 seconds
+            if (currentSecondsLeft <= 10) {
+                elProgressBar.style.backgroundColor = '#ff4d4d'; // Red
+                elTimeDisplay.style.color = '#ff4d4d';
+            } else if (currentSecondsLeft <= 30) {
+                elProgressBar.style.backgroundColor = '#ffb75d'; // Orange
+                elTimeDisplay.style.color = '#ffb75d';
+            } else {
+                elProgressBar.style.backgroundColor = '#00ffd3'; // Default SF Mint
+                elTimeDisplay.style.color = '#00ffd3';
+            }
+        }
+        // ------------------------
         // Feature 2: Load roster from local storage on load
         window.addEventListener('DOMContentLoaded', () => {
             const savedRoster = localStorage.getItem('sfStandupRoster');
@@ -413,7 +523,7 @@ Chris (CPQ Specialist)</textarea>
                 alert("Please add at least one name to the input roster.");
                 return;
             }
-
+stopTimer();
             // Clear any active trumpet confetti
             if (trumpetConfettiInterval) {
                 clearInterval(trumpetConfettiInterval);
@@ -442,7 +552,7 @@ Chris (CPQ Specialist)</textarea>
          */
         function initiatePick() {
             if (isSpinning || waitingInOrbit.length === 0) return;
-
+stopTimer();
             // Clear any active trumpet confetti from the previous winner
             if (trumpetConfettiInterval) {
                 clearInterval(trumpetConfettiInterval);
@@ -484,6 +594,7 @@ Chris (CPQ Specialist)</textarea>
             // Fire Confetti for the Winner immediately
             fireConfetti();
             trumpetConfettiInterval = setInterval(fireTrumpetConfetti, 3000);
+            startTimer();
 
             // Step C: Spin for the NEXT On Deck person inside the preview box
             if (waitingInOrbit.length > 0) {
@@ -611,7 +722,7 @@ Chris (CPQ Specialist)</textarea>
 
             const lastPerson = completedRelease.pop();
             waitingInOrbit.push(lastPerson);
-
+stopTimer();
             // Stop current confetti
             if (trumpetConfettiInterval) {
                 clearInterval(trumpetConfettiInterval);
